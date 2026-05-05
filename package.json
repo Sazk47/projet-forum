@@ -1,13 +1,13 @@
 {
-  "name": "nodejs-image-demo",
+  "name": "forum-application",
   "version": "1.0.0",
-  "description": "nodejs image demo",
-  "author": "Sammy the Shark <sammy@example.com>",
-  "license": "MIT",
+  "description": "A simple forum application built with Node.js and Docker.",
+  "author": "Nelty",
+  "license": "YNOV",
   "main": "app.js",
   "keywords": [
     "nodejs",
-    "bootstrap",
+    "docker",
     "express"
   ],
   "dependencies": {
