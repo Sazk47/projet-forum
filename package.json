@@ -7,10 +7,6 @@
   "main": "app.js",
   "keywords": [
     "nodejs",
-    "docker",
-    "express"
-  ],
-  "dependencies": {
-    "express": "^4.16.4"
-  }
+    "docker"
+  ]
 }
