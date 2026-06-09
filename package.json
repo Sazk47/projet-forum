@@ -1,0 +1,17 @@
+{
+  "name": "forum-application",
+  "version": "1.0.0",
+  "description": "A simple forum application built with Node.js and Docker.",
+  "author": "Nelty",
+  "license": "YNOV",
+  "main": "app.js",
+  "keywords": [
+    "nodejs",
+    "docker"
+  ],
+  "dependencies": {
+    "better-sqlite3": "^9.0.0",
+    "bcrypt": "^5.1.1",
+    "busboy": "^1.0.0"
+  }
+}

@@ -71,5 +71,31 @@ module.exports = async (req, res, path, method) => {
         return res.json(200, { message: 'Déconnecté avec succès' });
     }
 
+    // GET /api/auth/user - Récupérer l'utilisateur connecté
+    if (path === '/api/auth/user' && method === 'GET') {
+        const cookie = req.headers.cookie || '';
+        const sessionId = cookie.split(';')
+                                .find(c => c.trim().startsWith('session_id='))
+                                ?.split('=')[1];
+
+        if (!sessionId) {
+            return res.json(200, { user: null });
+        }
+
+        const session = db.prepare(`
+            SELECT user_id FROM sessions 
+            WHERE id = ? AND expires_at > datetime('now')
+        `).get(sessionId);
+
+        if (!session) {
+            return res.json(200, { user: null });
+        }
+
+        const user = db.prepare('SELECT id, username, email FROM users WHERE id = ?')
+                      .get(session.user_id);
+
+        return res.json(200, { user: user || null });
+    }
+
     res.json(404, { error: 'Route non trouvée' });
 };
