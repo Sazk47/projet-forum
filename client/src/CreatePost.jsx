@@ -12,8 +12,8 @@ function CreatePost() {
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(false);
     const [categoriesLoading, setCategoriesLoading] = useState(true);
+    const [fileName, setFileName] = useState('Aucun fichier choisi');
 
-    // Récupérer les catégories
     useEffect(() => {
         fetch('http://localhost:8080/api/categories')
             .then(res => res.json())
@@ -29,17 +29,13 @@ function CreatePost() {
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
+        setFormData(prev => ({ ...prev, [name]: value }));
     };
 
     const handleImageChange = (e) => {
-        setFormData(prev => ({
-            ...prev,
-            image: e.target.files[0]
-        }));
+        const file = e.target.files[0];
+        setFormData(prev => ({ ...prev, image: file }));
+        setFileName(file ? file.name : 'Aucun fichier choisi');
     };
 
     const handleCategoryChange = (categoryId) => {
@@ -57,9 +53,8 @@ function CreatePost() {
         setError(null);
         setSuccess(false);
 
-        // Vérifier que au moins une catégorie est sélectionnée
         if (formData.categories.length === 0) {
-            setError('Vous devez sélectionner au moins une catégorie');
+            setError('Sélectionnez au moins une catégorie.');
             setLoading(false);
             return;
         }
@@ -68,13 +63,8 @@ function CreatePost() {
             const form = new FormData();
             form.append('title', formData.title);
             form.append('body', formData.body);
-            if (formData.image) {
-                form.append('image', formData.image);
-            }
-            // Ajouter les catégories (chaque ID séparément)
-            formData.categories.forEach(categoryId => {
-                form.append('categories', categoryId);
-            });
+            if (formData.image) form.append('image', formData.image);
+            formData.categories.forEach(id => form.append('categories', id));
 
             const response = await fetch('http://localhost:8080/api/posts', {
                 method: 'POST',
@@ -82,12 +72,11 @@ function CreatePost() {
                 credentials: 'include'
             });
 
-            if (!response.ok) {
-                throw new Error('Erreur lors de la création du post');
-            }
+            if (!response.ok) throw new Error('Erreur lors de la création du post');
 
             setSuccess(true);
             setFormData({ title: '', body: '', image: null, categories: [] });
+            setFileName('Aucun fichier choisi');
             setTimeout(() => setSuccess(false), 3000);
         } catch (err) {
             setError(err.message);
@@ -97,15 +86,15 @@ function CreatePost() {
     };
 
     return (
-        <div style={{ maxWidth: '600px', margin: '20px auto', padding: '20px', border: '1px solid #ddd', borderRadius: '8px' }}>
+        <div className="create-post">
             <h2>Créer un nouveau post</h2>
 
-            {error && <div style={{ color: 'red', marginBottom: '10px' }}>Erreur: {error}</div>}
-            {success && <div style={{ color: 'green', marginBottom: '10px' }}>Post créé avec succès!</div>}
+            {error   && <div className="alert alert-error">{error}</div>}
+            {success && <div className="alert alert-success">Post créé avec succès !</div>}
 
             <form onSubmit={handleSubmit}>
-                <div style={{ marginBottom: '15px' }}>
-                    <label htmlFor="title">Titre:</label>
+                <div className="form-field">
+                    <label htmlFor="title">Titre</label>
                     <input
                         type="text"
                         id="title"
@@ -113,13 +102,12 @@ function CreatePost() {
                         value={formData.title}
                         onChange={handleInputChange}
                         required
-                        style={{ width: '100%', padding: '8px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }}
                         placeholder="Entrez le titre du post"
                     />
                 </div>
 
-                <div style={{ marginBottom: '15px' }}>
-                    <label htmlFor="body">Contenu:</label>
+                <div className="form-field">
+                    <label htmlFor="body">Contenu</label>
                     <textarea
                         id="body"
                         name="body"
@@ -127,44 +115,47 @@ function CreatePost() {
                         onChange={handleInputChange}
                         required
                         rows="5"
-                        style={{ width: '100%', padding: '8px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }}
                         placeholder="Entrez le contenu du post"
                     />
                 </div>
 
-                <div style={{ marginBottom: '15px' }}>
-                    <label htmlFor="image">Image:</label>
-                    <input
-                        type="file"
-                        id="image"
-                        name="image"
-                        onChange={handleImageChange}
-                        accept="image/*"
-                        style={{ marginTop: '5px' }}
-                    />
+                <div className="form-field">
+                    <label>Image (optionnel)</label>
+                    <div className="file-input-wrapper">
+                        <label className="file-input-label">
+                            Choisir un fichier
+                            <input
+                                type="file"
+                                name="image"
+                                onChange={handleImageChange}
+                                accept="image/*"
+                            />
+                        </label>
+                        <span className="file-name">{fileName}</span>
+                    </div>
                 </div>
 
-                <div style={{ marginBottom: '15px' }}>
-                    <label>Catégories:</label>
+                <div className="form-field">
+                    <label>Catégories</label>
                     {categoriesLoading ? (
-                        <p>Chargement des catégories...</p>
+                        <p style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Chargement…</p>
                     ) : (
-                        <div style={{ marginTop: '5px' }}>
+                        <div className="categories-grid">
                             {categories.length === 0 ? (
-                                <p>Aucune catégorie disponible</p>
+                                <p style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Aucune catégorie disponible</p>
                             ) : (
                                 categories.map(category => (
-                                    <div key={category.id} style={{ marginBottom: '8px' }}>
-                                        <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
-                                            <input
-                                                type="checkbox"
-                                                checked={formData.categories.includes(category.id)}
-                                                onChange={() => handleCategoryChange(category.id)}
-                                                style={{ marginRight: '8px' }}
-                                            />
-                                            <span>{category.name}</span>
-                                        </label>
-                                    </div>
+                                    <label
+                                        key={category.id}
+                                        className={`category-chip${formData.categories.includes(category.id) ? ' selected' : ''}`}
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={formData.categories.includes(category.id)}
+                                            onChange={() => handleCategoryChange(category.id)}
+                                        />
+                                        {category.name}
+                                    </label>
                                 ))
                             )}
                         </div>
@@ -173,19 +164,14 @@ function CreatePost() {
 
                 <button
                     type="submit"
+                    className="btn-submit"
                     disabled={loading || formData.categories.length === 0}
-                    style={{
-                        width: '100%',
-                        padding: '10px',
-                        backgroundColor: (loading || formData.categories.length === 0) ? '#ccc' : '#4CAF50',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: loading ? 'not-allowed' : 'pointer',
-                        fontSize: '16px'
-                    }}
                 >
-                    {loading ? 'Création en cours...' : formData.categories.length === 0 ? 'Sélectionnez une catégorie' : 'Créer le post'}
+                    {loading
+                        ? 'Publication…'
+                        : formData.categories.length === 0
+                            ? 'Sélectionnez une catégorie'
+                            : 'Publier le post'}
                 </button>
             </form>
         </div>

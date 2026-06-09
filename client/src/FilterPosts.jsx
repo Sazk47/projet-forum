@@ -6,7 +6,6 @@ function FilterPosts({ onFilterChange, userConnected }) {
     const [showMine, setShowMine] = useState(false);
     const [showLiked, setShowLiked] = useState(false);
 
-    // Récupérer les catégories
     useEffect(() => {
         fetch('http://localhost:8080/api/categories')
             .then(res => res.json())
@@ -15,24 +14,27 @@ function FilterPosts({ onFilterChange, userConnected }) {
     }, []);
 
     const handleCategoryChange = (categoryId) => {
-        setSelectedCategory(selectedCategory === categoryId ? null : categoryId);
+        const next = selectedCategory === categoryId ? null : categoryId;
+        setSelectedCategory(next);
         setShowMine(false);
         setShowLiked(false);
-        onFilterChange({ category: selectedCategory === categoryId ? null : categoryId });
+        onFilterChange({ category: next });
     };
 
     const handleMineChange = () => {
-        setShowMine(!showMine);
+        const next = !showMine;
+        setShowMine(next);
         setShowLiked(false);
         setSelectedCategory(null);
-        onFilterChange({ mine: !showMine });
+        onFilterChange({ mine: next });
     };
 
     const handleLikedChange = () => {
-        setShowLiked(!showLiked);
+        const next = !showLiked;
+        setShowLiked(next);
         setShowMine(false);
         setSelectedCategory(null);
-        onFilterChange({ liked: !showLiked });
+        onFilterChange({ liked: next });
     };
 
     const handleClearFilters = () => {
@@ -42,93 +44,47 @@ function FilterPosts({ onFilterChange, userConnected }) {
         onFilterChange({});
     };
 
+    const hasFilter = selectedCategory || showMine || showLiked;
+
     return (
-        <div style={{
-            backgroundColor: '#f5f5f5',
-            padding: '15px',
-            borderRadius: '8px',
-            marginBottom: '20px',
-            border: '1px solid #ddd'
-        }}>
-            <h3 style={{ marginTop: 0 }}>Filtrer les posts</h3>
+        <div className="filter-bar">
+            <h3>Filtrer les posts</h3>
 
-            <div style={{ marginBottom: '15px' }}>
-                <h4>Par catégorie :</h4>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                    {categories.map(cat => (
+            <div className="filter-row">
+                {categories.map(cat => (
+                    <button
+                        key={cat.id}
+                        onClick={() => handleCategoryChange(cat.id)}
+                        className={`filter-btn${selectedCategory === cat.id ? ' active-cat' : ''}`}
+                    >
+                        {cat.name}
+                    </button>
+                ))}
+
+                {userConnected && (
+                    <>
+                        <div className="filter-divider" />
                         <button
-                            key={cat.id}
-                            onClick={() => handleCategoryChange(cat.id)}
-                            style={{
-                                padding: '8px 12px',
-                                backgroundColor: selectedCategory === cat.id ? '#4CAF50' : '#e0e0e0',
-                                color: selectedCategory === cat.id ? 'white' : '#333',
-                                border: 'none',
-                                borderRadius: '4px',
-                                cursor: 'pointer',
-                                fontSize: '14px'
-                            }}
+                            onClick={handleMineChange}
+                            className={`filter-btn${showMine ? ' active-mine' : ''}`}
                         >
-                            {cat.name}
+                            {showMine ? '✓ ' : ''}Mes posts
                         </button>
-                    ))}
-                </div>
+                        <button
+                            onClick={handleLikedChange}
+                            className={`filter-btn${showLiked ? ' active-liked' : ''}`}
+                        >
+                            {showLiked ? '♥ ' : '♡ '}Aimés
+                        </button>
+                    </>
+                )}
+
+                {hasFilter && (
+                    <button onClick={handleClearFilters} className="filter-btn reset">
+                        Réinitialiser
+                    </button>
+                )}
             </div>
-
-            {userConnected && (
-                <div style={{ marginBottom: '15px' }}>
-                    <h4>Mes posts :</h4>
-                    <button
-                        onClick={handleMineChange}
-                        style={{
-                            padding: '8px 12px',
-                            backgroundColor: showMine ? '#2196F3' : '#e0e0e0',
-                            color: showMine ? 'white' : '#333',
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: 'pointer',
-                            fontSize: '14px'
-                        }}
-                    >
-                        {showMine ? '✓ Mes posts' : 'Mes posts'}
-                    </button>
-                </div>
-            )}
-
-            {userConnected && (
-                <div style={{ marginBottom: '15px' }}>
-                    <h4>Posts aimés :</h4>
-                    <button
-                        onClick={handleLikedChange}
-                        style={{
-                            padding: '8px 12px',
-                            backgroundColor: showLiked ? '#FF9800' : '#e0e0e0',
-                            color: showLiked ? 'white' : '#333',
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: 'pointer',
-                            fontSize: '14px'
-                        }}
-                    >
-                        {showLiked ? '❤ Posts aimés' : 'Posts aimés'}
-                    </button>
-                </div>
-            )}
-
-            <button
-                onClick={handleClearFilters}
-                style={{
-                    padding: '8px 12px',
-                    backgroundColor: '#999',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    fontSize: '14px'
-                }}
-            >
-                Réinitialiser les filtres
-            </button>
         </div>
     );
 }
