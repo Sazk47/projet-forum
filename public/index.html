@@ -1,15 +1,73 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="fr">
-    <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width" />
-    <title>Gamer zone</title>
-    </head>
-    <body>
-        <h1>Bienvenue sur mon forum !</h1>
-        <p>Ceci est une page de test pour notre projet de forum.</p>
-        <p>Vous pouvez vous inscrire ou vous connecter pour participer aux discussions.</p>
-        <p><a href="html/login.html">Se connecter / S'inscrire</a></p>
-    </body>
-    <p> </p>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forum - Gamer Zone</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <header>
+        <h1>Forum</h1>
+        <div class="auth-buttons">
+            <div id="user-logged-out" class="auth-buttons">
+                <a href="html/login.html" class="btn-login">Connexion</a>
+            </div>
+            <div id="user-logged-in" class="user-section hidden">
+                <span id="username-display"></span>
+                <button class="btn-logout" onclick="handleLogout()">Déconnexion</button>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <div class="hero">
+            <h2>Bienvenue sur le Forum</h2>
+            <p>Rejoignez notre communauté de passionnés de gaming. Partagez vos avis, créez des sujets de discussion et participez aux débats.</p>
+            <div id="cta-section">
+                <a href="html/login.html" class="cta-button">Créer un compte</a>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        async function checkAuthStatus() {
+            try {
+                const response = await fetch('http://localhost:8080/api/auth/user', {
+                    credentials: 'include'
+                });
+                const data = await response.json();
+                
+                if (data.user) {
+                    document.getElementById('user-logged-out').classList.add('hidden');
+                    document.getElementById('user-logged-in').classList.remove('hidden');
+                    document.getElementById('username-display').textContent = 'Bienvenue ' + data.user.username;
+                    document.getElementById('cta-section').innerHTML = '<a href="http://localhost:3000" class="cta-button">Accéder au Forum</a>';
+                }
+            } catch (error) {
+                console.error('Erreur lors de la vérification:', error);
+            }
+        }
+
+        async function handleLogout() {
+            try {
+                const response = await fetch('http://localhost:8080/api/auth/logout', {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    window.location.href = 'http://localhost:8080/';
+                } else {
+                    alert('Erreur lors de la déconnexion');
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+                alert('Erreur lors de la déconnexion');
+            }
+        }
+
+        checkAuthStatus();
+    </script>
+</body>
 </html>

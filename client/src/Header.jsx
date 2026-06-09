@@ -35,12 +35,16 @@ function Header() {
     return (
         <header style={styles.header}>
             <h1>Forum</h1>
-            {user && (
-                <div style={styles.userSection}>
-                    <span>Bienvenue {user.username}</span>
-                    <button onClick={handleLogout} style={styles.logoutBtn}>Déconnexion</button>
-                </div>
-            )}
+            <div style={styles.userSection}>
+                {user ? (
+                    <>
+                        <span>Bienvenue {user.username}</span>
+                        <button onClick={handleLogout} style={styles.logoutBtn}>Déconnexion</button>
+                    </>
+                ) : (
+                    <a href="http://localhost:8080/html/login.html" style={styles.loginBtn}>Connexion</a>
+                )}
+            </div>
         </header>
     );
 }
@@ -69,6 +73,17 @@ const styles = {
         borderRadius: '4px',
         cursor: 'pointer',
         fontSize: '14px'
+    },
+    loginBtn: {
+        padding: '8px 16px',
+        backgroundColor: '#007bff',
+        color: 'white',
+        border: 'none',
+        borderRadius: '4px',
+        cursor: 'pointer',
+        fontSize: '14px',
+        textDecoration: 'none',
+        display: 'inline-block'
     }
 };
 

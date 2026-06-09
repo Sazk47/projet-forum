@@ -121,7 +121,7 @@ const server = http.createServer((req, res) => {
         let filePath;
         
         if (urlPath === '/') {
-            filePath = path.join(__dirname, 'public', 'html', 'login.html');
+            filePath = path.join(__dirname, 'public', 'index.html');
         } else {
             filePath = path.join(__dirname, 'public', urlPath);
         }
