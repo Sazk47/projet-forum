@@ -8,5 +8,10 @@
   "keywords": [
     "nodejs",
     "docker"
-  ]
+  ],
+  "dependencies": {
+    "better-sqlite3": "^9.0.0",
+    "bcrypt": "^5.1.1",
+    "busboy": "^1.0.0"
+  }
 }

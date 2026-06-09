@@ -95,4 +95,22 @@ const initDB = () => {
 
 initDB();
 
+// Ajouter les catégories par défaut
+const seedCategories = () => {
+    const defaultCategories = [
+        { name: 'Général', description: 'Discussions générales' },
+        { name: 'Technologie', description: 'Sujets relatifs à la technologie' },
+        { name: 'Actualités', description: 'Dernières actualités' },
+        { name: 'Divertissement', description: 'Contenus amusants et divertissants' },
+        { name: 'Questions', description: 'Poser des questions' }
+    ];
+
+    const stmt = db.prepare('INSERT OR IGNORE INTO category (name, description) VALUES (?, ?)');
+    defaultCategories.forEach(cat => {
+        stmt.run(cat.name, cat.description);
+    });
+};
+
+seedCategories();
+
 module.exports = db;
