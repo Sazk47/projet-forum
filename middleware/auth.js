@@ -7,8 +7,9 @@ module.exports = (req, res) => {
                             ?.split('=')[1];
 
     if (!sessionId) {
-        res.json(401, { error: 'Non connecté' });
-        return null;
+        const err = new Error('Non connecté');
+        err.status = 401;
+        throw err;
     }
 
     const session = db.prepare(`
@@ -19,8 +20,9 @@ module.exports = (req, res) => {
     `).get(sessionId);
 
     if (!session) {
-        res.json(401, { error: 'Session expirée ou invalide' });
-        return null;
+        const err = new Error('Session expirée ou invalide');
+        err.status = 401;
+        throw err;
     }
 
     return session;
