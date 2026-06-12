@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import './App.css';
 import Posts from './Posts';
 import CreatePost from './CreatePost';
@@ -19,15 +20,34 @@ const ForumLogo = () => (
   </svg>
 );
 
+// Toast de confirmation bas droite
+function Toast({ visible }) {
+  return (
+    <div className={`toast${visible ? ' toast--visible' : ''}`}>
+      ✓ Post publié avec succès
+    </div>
+  );
+}
+
 function App() {
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastTrigger, setToastTrigger] = useState(0);
+
+  const handlePostCreated = () => {
+    setToastVisible(true);
+    setToastTrigger(n => n + 1); // signal à Posts.jsx de recharger
+    setTimeout(() => setToastVisible(false), 3000);
+  };
+
   return (
     <div className="app-wrapper">
       <header className="app-header">
         <ForumLogo />
         <h1>Forum</h1>
       </header>
-      <CreatePost />
-      <Posts />
+      <CreatePost onPostCreated={handlePostCreated} />
+      <Posts toastTrigger={toastTrigger} />
+      <Toast visible={toastVisible} />
     </div>
   );
 }

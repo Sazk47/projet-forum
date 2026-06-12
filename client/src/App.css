@@ -529,3 +529,173 @@ body::before {
   .post-card { padding: 18px 18px 18px 22px; }
   .filter-btn.reset { margin-left: 0; }
 }
+
+/* ── Skeleton loader ── */
+@keyframes shimmer {
+  0%   { background-position: -600px 0; }
+  100% { background-position: 600px 0; }
+}
+
+.skeleton {
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--border) 25%, #353858 50%, var(--border) 75%);
+  background-size: 600px 100%;
+  animation: shimmer 1.4s infinite linear;
+}
+
+.skeleton-card {
+  pointer-events: none;
+}
+
+.skeleton-title {
+  height: 20px;
+  width: 55%;
+  margin-bottom: 14px;
+}
+
+.skeleton-line {
+  height: 13px;
+  width: 90%;
+  margin-bottom: 10px;
+}
+
+.skeleton-line--short {
+  width: 65%;
+  margin-bottom: 14px;
+}
+
+.skeleton-tags {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.skeleton-tag {
+  height: 20px;
+  width: 64px;
+  border-radius: 20px;
+}
+
+.skeleton-meta {
+  height: 11px;
+  width: 30%;
+}
+
+/* ── Date relative ── */
+.post-meta-date {
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+/* ── Toast ── */
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeOut {
+  0%   { opacity: 1; }
+  70%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.toast {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px;
+  border-radius: var(--radius);
+  font-size: 14px;
+  font-weight: 500;
+  z-index: 1000;
+  animation: slideUp 0.3s ease both, fadeOut 3s ease forwards;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.toast--success {
+  background: #1a2e22;
+  border: 1px solid rgba(74, 222, 128, 0.35);
+  color: var(--success);
+}
+
+.toast-icon {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+/* ── Skeleton loader ── */
+@keyframes shimmer {
+  0%   { background-position: -600px 0; }
+  100% { background-position:  600px 0; }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, var(--border) 25%, var(--surface-hover) 50%, var(--border) 75%);
+  background-size: 600px 100%;
+  animation: shimmer 1.4s infinite linear;
+  border-radius: 4px;
+}
+
+.skeleton-card { pointer-events: none; }
+
+.skeleton-title {
+  height: 20px;
+  width: 55%;
+  margin-bottom: 14px;
+}
+
+.skeleton-line {
+  height: 13px;
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.skeleton-line--short {
+  width: 70%;
+  margin-bottom: 14px;
+}
+
+.skeleton-tags {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.skeleton-tag {
+  height: 20px;
+  width: 64px;
+  border-radius: 20px;
+}
+
+.skeleton-meta {
+  height: 11px;
+  width: 30%;
+}
+
+/* ── Toast ── */
+.toast {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  background: var(--surface);
+  border: 1px solid rgba(74, 222, 128, 0.35);
+  color: var(--success);
+  padding: 12px 20px;
+  border-radius: var(--radius);
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  pointer-events: none;
+  z-index: 999;
+}
+
+.toast--visible {
+  opacity: 1;
+  transform: translateY(0);
+}
