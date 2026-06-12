@@ -43,41 +43,65 @@ body::before {
 .app-wrapper {
   max-width: 860px;
   margin: 0 auto;
-  padding: 40px 20px 80px;
+  padding: 100px 20px 80px;
   position: relative;
   z-index: 1;
 }
 
-/* ── Header ── */
-.app-header {
+/* ── Navbar fixe ── */
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  height: 60px;
+  background: rgba(15, 17, 23, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
-  gap: 14px;
-  margin-bottom: 48px;
-  padding-bottom: 24px;
-  border-bottom: 1px solid var(--border);
+  justify-content: space-between;
+  padding: 0 24px;
   animation: fadeDown 0.4s ease both;
 }
 
-.app-header .logo-icon {
-  width: 36px;
-  height: 36px;
+.navbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.navbar-brand .logo-icon {
+  width: 32px;
+  height: 32px;
   flex-shrink: 0;
-  filter: drop-shadow(0 0 8px rgba(108, 99, 255, 0.5));
+  filter: drop-shadow(0 0 6px rgba(108, 99, 255, 0.45));
   transition: filter 0.3s;
 }
 
-.app-header:hover .logo-icon {
-  filter: drop-shadow(0 0 14px rgba(168, 156, 255, 0.7));
+.navbar-brand:hover .logo-icon {
+  filter: drop-shadow(0 0 12px rgba(168, 156, 255, 0.7));
 }
 
-.app-header h1 {
+.navbar-brand h1 {
   font-family: 'Syne', sans-serif;
-  font-size: 28px;
+  font-size: 20px;
   font-weight: 800;
-  letter-spacing: -0.5px;
+  letter-spacing: -0.4px;
   color: var(--text);
 }
+
+.navbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+
 
 /* ── Animations ── */
 @keyframes fadeDown {
@@ -501,20 +525,41 @@ body::before {
 }
 
 /* ── States ── */
-.state-loading,
-.state-empty {
+.state-loading {
   text-align: center;
   padding: 48px 20px;
   color: var(--text-muted);
   font-size: 14px;
 }
 
-.state-empty::before {
-  content: '∅';
-  display: block;
-  font-size: 32px;
-  margin-bottom: 10px;
-  color: var(--border);
+.state-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 60px 20px;
+  color: var(--text-muted);
+  font-size: 14px;
+  text-align: center;
+}
+
+.state-empty svg {
+  opacity: 0.35;
+  margin-bottom: 4px;
+}
+
+.state-empty strong {
+  font-family: 'Syne', sans-serif;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text);
+  opacity: 0.6;
+}
+
+/* Responsive navbar */
+@media (max-width: 600px) {
+  .navbar { padding: 0 16px; }
+  .app-wrapper { padding: 90px 16px 60px; }
 }
 
 /* Reduced motion */

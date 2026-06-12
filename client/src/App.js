@@ -20,7 +20,6 @@ const ForumLogo = () => (
   </svg>
 );
 
-// Toast de confirmation bas droite
 function Toast({ visible }) {
   return (
     <div className={`toast${visible ? ' toast--visible' : ''}`}>
@@ -35,20 +34,30 @@ function App() {
 
   const handlePostCreated = () => {
     setToastVisible(true);
-    setToastTrigger(n => n + 1); // signal à Posts.jsx de recharger
+    setToastTrigger(n => n + 1);
     setTimeout(() => setToastVisible(false), 3000);
   };
 
   return (
-    <div className="app-wrapper">
-      <header className="app-header">
-        <ForumLogo />
-        <h1>Forum</h1>
-      </header>
-      <CreatePost onPostCreated={handlePostCreated} />
-      <Posts toastTrigger={toastTrigger} />
+    <>
+      {/* Navbar fixe */}
+      <nav className="navbar">
+        <div className="navbar-brand">
+          <ForumLogo />
+          <h1>Forum</h1>
+        </div>
+        <div className="navbar-right">
+          {/* Espace réservé pour les boutons connexion de ton collègue */}
+        </div>
+      </nav>
+
+      <div className="app-wrapper">
+        <CreatePost onPostCreated={handlePostCreated} />
+        <Posts toastTrigger={toastTrigger} />
+      </div>
+
       <Toast visible={toastVisible} />
-    </div>
+    </>
   );
 }
 

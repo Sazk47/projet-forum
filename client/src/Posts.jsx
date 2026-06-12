@@ -25,11 +25,23 @@ function SkeletonCard() {
     );
 }
 
+const EmptyIcon = () => (
+    <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="8" y="12" width="48" height="36" rx="6" stroke="#6c63ff" strokeWidth="2"/>
+        <path d="M8 20h48" stroke="#6c63ff" strokeWidth="2"/>
+        <circle cx="16" cy="16" r="2" fill="#6c63ff"/>
+        <circle cx="22" cy="16" r="2" fill="#6c63ff"/>
+        <circle cx="28" cy="16" r="2" fill="#6c63ff"/>
+        <path d="M20 32h24M20 38h16" stroke="#6c63ff" strokeWidth="2" strokeLinecap="round"/>
+        <path d="M40 52l8 6V52h4a4 4 0 004-4V36" stroke="#a89cff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+);
+
 function Posts({ toastTrigger }) {
-    const [posts, setPosts]               = useState([]);
-    const [loading, setLoading]           = useState(true);
-    const [error, setError]               = useState(null);
-    const [filters, setFilters]           = useState({});
+    const [posts, setPosts]                 = useState([]);
+    const [loading, setLoading]             = useState(true);
+    const [error, setError]                 = useState(null);
+    const [filters, setFilters]             = useState({});
     const [userConnected, setUserConnected] = useState(false);
 
     useEffect(() => {
@@ -54,9 +66,7 @@ function Posts({ toastTrigger }) {
             .catch(err => { setError(err.message); setLoading(false); });
     };
 
-    // Recharge les posts quand un nouveau post est créé
     useEffect(() => { if (toastTrigger > 0) fetchPosts(filters); }, [toastTrigger]);
-
     useEffect(() => { fetchPosts(filters); }, []);
 
     const handleFilterChange = (newFilters) => {
@@ -74,7 +84,11 @@ function Posts({ toastTrigger }) {
             {loading && <><SkeletonCard /><SkeletonCard /><SkeletonCard /></>}
 
             {!loading && posts.length === 0 && (
-                <div className="state-empty">Aucun post ne correspond aux filtres.</div>
+                <div className="state-empty">
+                    <EmptyIcon />
+                    <strong>Aucun post pour l'instant</strong>
+                    <span>Sois le premier à publier quelque chose !</span>
+                </div>
             )}
 
             {!loading && posts.map(post => (
@@ -101,9 +115,7 @@ function Posts({ toastTrigger }) {
 
                     <div className="post-meta">
                         Par <span>{post.username}</span>
-                        {post.created_at && (
-                            <> · {timeAgo(post.created_at)}</>
-                        )}
+                        {post.created_at && <> · {timeAgo(post.created_at)}</>}
                     </div>
                 </div>
             ))}
