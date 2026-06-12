@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import FilterPosts from './FilterPosts';
+import PostDetail from './PostDetail';
 
 function timeAgo(dateStr) {
     const diff = Math.floor((Date.now() - new Date(dateStr)) / 1000);
@@ -42,13 +43,13 @@ function Posts({ toastTrigger }) {
     const [loading, setLoading]             = useState(true);
     const [error, setError]                 = useState(null);
     const [filters, setFilters]             = useState({});
-    const [userConnected, setUserConnected] = useState(false);
+    const [currentUser, setCurrentUser]     = useState(null);
 
     useEffect(() => {
         fetch('http://localhost:8080/api/auth/user', { credentials: 'include' })
             .then(res => res.json())
-            .then(data => { if (data.user) setUserConnected(true); })
-            .catch(() => setUserConnected(false));
+            .then(data => setCurrentUser(data.user || null))
+            .catch(() => setCurrentUser(null));
     }, []);
 
     const fetchPosts = (filterParams) => {
@@ -77,7 +78,7 @@ function Posts({ toastTrigger }) {
     return (
         <div className="posts-section">
             <h1>Posts</h1>
-            <FilterPosts onFilterChange={handleFilterChange} userConnected={userConnected} />
+            <FilterPosts onFilterChange={handleFilterChange} userConnected={!!currentUser} />
 
             {error && <div className="alert alert-error">Erreur : {error}</div>}
 
@@ -92,32 +93,7 @@ function Posts({ toastTrigger }) {
             )}
 
             {!loading && posts.map(post => (
-                <div key={post.id} className="post-card">
-                    <h2>{post.title}</h2>
-
-                    {post.image_path && (
-                        <img
-                            className="post-image"
-                            src={`http://localhost:8080${post.image_path}`}
-                            alt={post.title}
-                        />
-                    )}
-
-                    <p>{post.body}</p>
-
-                    {post.categories && post.categories.length > 0 && (
-                        <div className="post-tags">
-                            {post.categories.map(cat => (
-                                <span key={cat.id} className="post-tag">{cat.name}</span>
-                            ))}
-                        </div>
-                    )}
-
-                    <div className="post-meta">
-                        Par <span>{post.username}</span>
-                        {post.created_at && <> · {timeAgo(post.created_at)}</>}
-                    </div>
-                </div>
+                <PostDetail key={post.id} post={post} currentUser={currentUser} timeAgo={timeAgo} />
             ))}
         </div>
     );

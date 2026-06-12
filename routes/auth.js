@@ -20,21 +20,13 @@ module.exports = async (req, res, urlPath, method) => {
     if (urlPath === '/api/auth/register' && method === 'POST') {
         const { username, email, password } = req.body;
 
-        if (!username || !email || !password) {
-            return res.sendError(400, 'Champs manquants');
-        }
+        if (!username || !email || !password) return res.sendError(400, 'Champs manquants');
 
-        const existing = db.prepare('SELECT id FROM users WHERE email = ? OR username = ?')
-                           .get(email, username);
-
-        if (existing) {
-            return res.sendError(409, 'Email ou username déjà utilisé');
-        }
+        const existing = db.prepare('SELECT id FROM users WHERE email = ? OR username = ?').get(email, username);
+        if (existing) return res.sendError(409, 'Email ou username déjà utilisé');
 
         const hash = await bcrypt.hash(password, 10);
-
-        db.prepare('INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)')
-          .run(username, email, hash);
+        db.prepare('INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)').run(username, email, hash);
 
         return res.json(201, { message: 'Compte créé avec succès' });
     }
@@ -43,12 +35,9 @@ module.exports = async (req, res, urlPath, method) => {
     if (urlPath === '/api/auth/login' && method === 'POST') {
         const { email, password } = req.body;
 
-        if (!email || !password) {
-            return res.sendError(400, 'Champs manquants');
-        }
+        if (!email || !password) return res.sendError(400, 'Champs manquants');
 
         const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
-
         if (!user || !(await bcrypt.compare(password, user.password_hash))) {
             return res.sendError(401, 'Email ou mot de passe incorrect');
         }
@@ -57,9 +46,7 @@ module.exports = async (req, res, urlPath, method) => {
 
         const sessionId = crypto.randomBytes(32).toString('hex');
         const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
-
-        db.prepare('INSERT INTO sessions (id, user_id, expires_at) VALUES (?, ?, ?)')
-          .run(sessionId, user.id, expiresAt);
+        db.prepare('INSERT INTO sessions (id, user_id, expires_at) VALUES (?, ?, ?)').run(sessionId, user.id, expiresAt);
 
         res.setHeader('Set-Cookie', `session_id=${sessionId}; HttpOnly; Path=/; SameSite=Strict`);
         return res.json(200, { message: 'Connecté avec succès' });
@@ -67,14 +54,9 @@ module.exports = async (req, res, urlPath, method) => {
 
     // POST /api/auth/logout
     if (urlPath === '/api/auth/logout' && method === 'POST') {
-        const cookie = req.headers.cookie || '';
-        const sessionId = cookie.split(';')
-                                .find(c => c.trim().startsWith('session_id='))
-                                ?.split('=')[1];
-
-        if (sessionId) {
-            db.prepare('DELETE FROM sessions WHERE id = ?').run(sessionId);
-        }
+        const cookie    = req.headers.cookie || '';
+        const sessionId = cookie.split(';').find(c => c.trim().startsWith('session_id='))?.split('=')[1];
+        if (sessionId) db.prepare('DELETE FROM sessions WHERE id = ?').run(sessionId);
 
         res.setHeader('Set-Cookie', 'session_id=; HttpOnly; Path=/; Max-Age=0');
         return res.json(200, { message: 'Déconnecté avec succès' });
@@ -82,27 +64,18 @@ module.exports = async (req, res, urlPath, method) => {
 
     // GET /api/auth/user
     if (urlPath === '/api/auth/user' && method === 'GET') {
-        const cookie = req.headers.cookie || '';
-        const sessionId = cookie.split(';')
-                                .find(c => c.trim().startsWith('session_id='))
-                                ?.split('=')[1];
+        const cookie    = req.headers.cookie || '';
+        const sessionId = cookie.split(';').find(c => c.trim().startsWith('session_id='))?.split('=')[1];
 
-        if (!sessionId) {
-            return res.json(200, { user: null });
-        }
+        if (!sessionId) return res.json(200, { user: null });
 
         const session = db.prepare(`
-            SELECT user_id FROM sessions 
-            WHERE id = ? AND expires_at > datetime('now')
+            SELECT user_id FROM sessions WHERE id = ? AND expires_at > datetime('now')
         `).get(sessionId);
 
-        if (!session) {
-            return res.json(200, { user: null });
-        }
+        if (!session) return res.json(200, { user: null });
 
-        const user = db.prepare('SELECT id, username, email FROM users WHERE id = ?')
-                       .get(session.user_id);
-
+        const user = db.prepare('SELECT id, username, email FROM users WHERE id = ?').get(session.user_id);
         return res.json(200, { user: user || null });
     }
 
