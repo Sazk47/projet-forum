@@ -116,12 +116,24 @@ const server = http.createServer((req, res) => {
         return;
     }
 
-    // Servir les fichiers statiques (images, css, etc.)
-    if (urlPath.startsWith('/uploads/')) {
-        const filePath = path.join(__dirname, 'public', urlPath);
+    // Servir les fichiers statiques (images, css, html, js, etc.)
+    if (urlPath.startsWith('/uploads/') || urlPath.startsWith('/css/') || urlPath.startsWith('/js/') || urlPath === '/' || urlPath.endsWith('.html') || urlPath.endsWith('.css') || urlPath.endsWith('.js')) {
+        let filePath;
         
-        // Vérifier que le fichier existe et est dans le bon répertoire
-        if (fs.existsSync(filePath) && filePath.startsWith(uploadsDir)) {
+        if (urlPath === '/') {
+            filePath = path.join(__dirname, 'public', 'index.html');
+        } else {
+            filePath = path.join(__dirname, 'public', urlPath);
+        }
+        
+        if (fs.existsSync(filePath)) {
+            // Pour uploads, vérifier que c'est dans le bon répertoire
+            if (urlPath.startsWith('/uploads/') && !filePath.startsWith(uploadsDir)) {
+                res.writeHead(404, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: 'Fichier non trouvé' }));
+                return;
+            }
+            
             const ext = path.extname(filePath).toLowerCase();
             const mimeTypes = {
                 '.jpg': 'image/jpeg',
@@ -130,7 +142,8 @@ const server = http.createServer((req, res) => {
                 '.gif': 'image/gif',
                 '.webp': 'image/webp',
                 '.css': 'text/css',
-                '.js': 'application/javascript'
+                '.js': 'application/javascript',
+                '.html': 'text/html'
             };
             const contentType = mimeTypes[ext] || 'application/octet-stream';
             

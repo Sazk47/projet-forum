@@ -22,7 +22,7 @@ const getUserFromSession = (req) => {
     if (!session) return null;
 
     const user = db.prepare('SELECT id, username FROM users WHERE id = ?')
-                  .get(session.user_id);
+                    .get(session.user_id);
 
     return user;
 };

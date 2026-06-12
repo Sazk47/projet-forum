@@ -12,6 +12,29 @@ function CreatePost() {
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(false);
     const [categoriesLoading, setCategoriesLoading] = useState(true);
+    const [user, setUser] = useState(null);
+    const [userLoading, setUserLoading] = useState(true);
+
+    // Vérifier l'authentification
+    useEffect(() => {
+        fetch('http://localhost:8080/api/auth/user', {
+            credentials: 'include'
+        })
+            .then(res => res.json())
+            .then(data => {
+                setUser(data.user);
+                setUserLoading(false);
+                if (!data.user) {
+                    setTimeout(() => {
+                        window.location.href = 'http://localhost:8080/html/login.html';
+                    }, 1500);
+                }
+            })
+            .catch(err => {
+                console.error('Erreur lors de la vérification:', err);
+                setUserLoading(false);
+            });
+    }, []);
 
     // Récupérer les catégories
     useEffect(() => {
@@ -100,9 +123,18 @@ function CreatePost() {
         <div style={{ maxWidth: '600px', margin: '20px auto', padding: '20px', border: '1px solid #ddd', borderRadius: '8px' }}>
             <h2>Créer un nouveau post</h2>
 
+            {userLoading && <div style={{ color: 'blue', marginBottom: '10px' }}>Vérification de l\'authentification...</div>}
+            
+            {!userLoading && !user && (
+                <div style={{ color: '#d32f2f', marginBottom: '10px', padding: '10px', backgroundColor: '#ffebee', borderRadius: '4px' }}>
+                    Vous devez être connecté pour créer un post. Redirection vers la page de connexion...
+                </div>
+            )}
+
             {error && <div style={{ color: 'red', marginBottom: '10px' }}>Erreur: {error}</div>}
             {success && <div style={{ color: 'green', marginBottom: '10px' }}>Post créé avec succès!</div>}
 
+            {user && (
             <form onSubmit={handleSubmit}>
                 <div style={{ marginBottom: '15px' }}>
                     <label htmlFor="title">Titre:</label>
@@ -188,6 +220,7 @@ function CreatePost() {
                     {loading ? 'Création en cours...' : formData.categories.length === 0 ? 'Sélectionnez une catégorie' : 'Créer le post'}
                 </button>
             </form>
+            )}
         </div>
     );
 }
