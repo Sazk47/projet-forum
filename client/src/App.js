@@ -1,5 +1,5 @@
-import './App.css'
 import { useState, useEffect } from 'react';
+import './App.css';
 import Posts from './Posts';
 import CreatePost from './CreatePost';
 import Auth from './Auth';
@@ -22,8 +22,9 @@ const ForumLogo = () => (
 );
 
 function Toast({ visible }) {
+  if (!visible) return null;
   return (
-    <div className={`toast${visible ? ' toast--visible' : ''}`}>
+    <div className="toast toast--visible">
       ✓ Post publié avec succès
     </div>
   );
@@ -34,6 +35,7 @@ function App() {
   const [toastTrigger, setToastTrigger] = useState(0);
   const [user, setUser] = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
+  const [showAuth, setShowAuth] = useState(false);
 
   useEffect(() => {
     fetch('http://localhost:8080/api/auth/user', { credentials: 'include' })
@@ -48,7 +50,10 @@ function App() {
   const handleLoginSuccess = () => {
     fetch('http://localhost:8080/api/auth/user', { credentials: 'include' })
       .then(res => res.json())
-      .then(data => setUser(data.user));
+      .then(data => {
+        setUser(data.user);
+        setShowAuth(false);
+      });
   };
 
   const handleLogout = async () => {
@@ -65,13 +70,20 @@ function App() {
     setTimeout(() => setToastVisible(false), 3000);
   };
 
+  const requireAuth = (callback) => {
+    if (!user) {
+      setShowAuth(true);
+      return false;
+    }
+    callback && callback();
+    return true;
+  };
+
   if (!authChecked) return <div>Chargement...</div>;
 
-  if (!user) {
-    return <Auth onLoginSuccess={handleLoginSuccess} />;
+  if (showAuth) {
+    return <Auth onLoginSuccess={handleLoginSuccess} onClose={() => setShowAuth(false)} />;
   }
-
-  require('./App.css');
 
   return (
     <>
@@ -81,14 +93,20 @@ function App() {
           <h1>Forum</h1>
         </div>
         <div className="navbar-right">
-          <span>Bonjour, {user.username}</span>
-          <button onClick={handleLogout}>Se déconnecter</button>
+          {user ? (
+            <>
+              <span>Bonjour, {user.username}</span>
+              <button onClick={handleLogout}>Se déconnecter</button>
+            </>
+          ) : (
+            <button onClick={() => setShowAuth(true)}>Se connecter</button>
+          )}
         </div>
       </nav>
 
       <div className="app-wrapper">
-        <CreatePost onPostCreated={handlePostCreated} />
-        <Posts toastTrigger={toastTrigger} />
+        {user && <CreatePost onPostCreated={handlePostCreated} />}
+        <Posts toastTrigger={toastTrigger} user={user} requireAuth={requireAuth} />
       </div>
 
       <Toast visible={toastVisible} />

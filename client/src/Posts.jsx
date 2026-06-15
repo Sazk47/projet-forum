@@ -38,19 +38,19 @@ const EmptyIcon = () => (
     </svg>
 );
 
-function Posts({ toastTrigger }) {
-    const [posts, setPosts]                 = useState([]);
-    const [loading, setLoading]             = useState(true);
-    const [error, setError]                 = useState(null);
-    const [filters, setFilters]             = useState({});
-    const [currentUser, setCurrentUser]     = useState(null);
+function Posts({ toastTrigger, user, requireAuth }) {
+    const [posts, setPosts]             = useState([]);
+    const [loading, setLoading]         = useState(true);
+    const [error, setError]             = useState(null);
+    const [filters, setFilters]         = useState({});
+    const [currentUser, setCurrentUser] = useState(user || null);
 
     useEffect(() => {
         fetch('http://localhost:8080/api/auth/user', { credentials: 'include' })
             .then(res => res.json())
             .then(data => setCurrentUser(data.user || null))
             .catch(() => setCurrentUser(null));
-    }, []);
+    }, [user]);
 
     const fetchPosts = (filterParams) => {
         setLoading(true);
@@ -75,6 +75,10 @@ function Posts({ toastTrigger }) {
         fetchPosts(newFilters);
     };
 
+    const handlePostDeleted = (id) => {
+        setPosts(prev => prev.filter(p => p.id !== id));
+    };
+
     return (
         <div className="posts-section">
             <h1>Posts</h1>
@@ -93,7 +97,14 @@ function Posts({ toastTrigger }) {
             )}
 
             {!loading && posts.map(post => (
-                <PostDetail key={post.id} post={post} currentUser={currentUser} timeAgo={timeAgo} />
+                <PostDetail
+                    key={post.id}
+                    post={post}
+                    currentUser={currentUser}
+                    timeAgo={timeAgo}
+                    requireAuth={requireAuth}
+                    onPostDeleted={handlePostDeleted}
+                />
             ))}
         </div>
     );

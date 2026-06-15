@@ -869,11 +869,16 @@ body::before {
   cursor: pointer;
   font-size: 13px;
   padding: 2px 4px;
-  opacity: 0.5;
-  transition: opacity 0.15s;
+  opacity: 1;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  transition: color 0.15s;
 }
 
-.comment-action-btn:hover { opacity: 1; }
+.comment-action-btn:hover {
+  color: var(--accent-light);
+}
 
 .comment-content {
   font-size: 14px;
@@ -954,6 +959,33 @@ body::before {
   font-size: 13px;
   cursor: pointer;
   transition: opacity 0.2s;
+}
+
+/* ── Navbar buttons ── */
+.navbar-right button {
+  padding: 7px 16px;
+  background: var(--accent-dim);
+  border: 1px solid var(--accent);
+  border-radius: 20px;
+  color: var(--accent-light);
+  font-family: 'Outfit', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s, transform 0.15s;
+  letter-spacing: 0.3px;
+}
+
+.navbar-right button:hover {
+  background: var(--accent);
+  color: white;
+  box-shadow: 0 4px 14px rgba(108, 99, 255, 0.4);
+  transform: translateY(-1px);
+}
+
+.navbar-right span {
+  color: var(--text-muted);
+  font-size: 13px;
 }
 
 .btn-comment-cancel:hover { opacity: 0.8; }

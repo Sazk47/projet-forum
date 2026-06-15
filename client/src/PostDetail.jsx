@@ -2,13 +2,53 @@ import { useState, useEffect } from 'react';
 
 const API = 'http://localhost:8080';
 
-function PostDetail({ post, currentUser, timeAgo }) {
-    const [likes, setLikes]             = useState({ likes: 0, dislikes: 0, user_vote: null });
-    const [comments, setComments]       = useState([]);
+const IconThumbUp = () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3H14z"/>
+        <path d="M7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3"/>
+    </svg>
+);
+
+const IconThumbDown = () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M10 15v4a3 3 0 003 3l4-9V2H5.72a2 2 0 00-2 1.7l-1.38 9a2 2 0 002 2.3H10z"/>
+        <path d="M17 2h2.67A2.31 2.31 0 0122 4v7a2.31 2.31 0 01-2.33 2H17"/>
+    </svg>
+);
+
+const IconComment = () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+    </svg>
+);
+
+const IconEdit = () => (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+        <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+    </svg>
+);
+
+const IconTrash = () => (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="3 6 5 6 21 6"/>
+        <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
+        <path d="M10 11v6M14 11v6"/>
+        <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/>
+    </svg>
+);
+
+function PostDetail({ post, currentUser, timeAgo, requireAuth, onPostDeleted }) {
+    const [likes, setLikes]               = useState({ likes: 0, dislikes: 0, user_vote: null });
+    const [comments, setComments]         = useState([]);
     const [showComments, setShowComments] = useState(false);
     const [commentInput, setCommentInput] = useState('');
-    const [editingId, setEditingId]     = useState(null);
-    const [editContent, setEditContent] = useState('');
+    const [editingId, setEditingId]       = useState(null);
+    const [editContent, setEditContent]   = useState('');
+    const [isEditingPost, setIsEditingPost] = useState(false);
+    const [editPostTitle, setEditPostTitle] = useState(post.title);
+    const [editPostBody, setEditPostBody]   = useState(post.body);
+    const [postData, setPostData]           = useState(post);
 
     useEffect(() => {
         fetch(`${API}/api/likes?post_id=${post.id}`, { credentials: 'include' })
@@ -30,7 +70,7 @@ function PostDetail({ post, currentUser, timeAgo }) {
     };
 
     const handleVotePost = async (type) => {
-        if (!currentUser) { alert('Connectez-vous pour voter.'); return; }
+        if (!currentUser) { requireAuth(); return; }
         await fetch(`${API}/api/likes`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -43,7 +83,7 @@ function PostDetail({ post, currentUser, timeAgo }) {
     };
 
     const handleVoteComment = async (commentId, type) => {
-        if (!currentUser) { alert('Connectez-vous pour voter.'); return; }
+        if (!currentUser) { requireAuth(); return; }
         await fetch(`${API}/api/likes`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -58,16 +98,14 @@ function PostDetail({ post, currentUser, timeAgo }) {
     };
 
     const handleSubmitComment = async () => {
-        if (!currentUser) { alert('Connectez-vous pour commenter.'); return; }
+        if (!currentUser) { requireAuth(); return; }
         if (!commentInput.trim()) return;
-
         const res = await fetch(`${API}/api/comments`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
             body: JSON.stringify({ post_id: post.id, content: commentInput.trim() })
         });
-
         if (res.ok) { setCommentInput(''); fetchComments(); }
         else { const d = await res.json(); alert(d.error || 'Erreur'); }
     };
@@ -88,58 +126,126 @@ function PostDetail({ post, currentUser, timeAgo }) {
             body: JSON.stringify({ content: editContent.trim() })
         });
         if (res.ok) {
-            setComments(prev => prev.map(c => c.id === id ? { ...c, content: editContent.trim() } : c));
+            setComments(prev => prev.map(c =>
+                c.id === id ? { ...c, content: editContent.trim(), edited: true } : c
+            ));
             setEditingId(null);
             setEditContent('');
         } else { const d = await res.json(); alert(d.error || 'Erreur'); }
     };
 
+    const handleDeletePost = async () => {
+        if (!window.confirm('Supprimer ce post ?')) return;
+        const res = await fetch(`${API}/api/posts/${post.id}`, {
+            method: 'DELETE',
+            credentials: 'include'
+        });
+        if (res.ok) {
+            onPostDeleted && onPostDeleted(post.id);
+        } else {
+            const d = await res.json();
+            alert(d.error || 'Erreur lors de la suppression');
+        }
+    };
+
+    const handleEditPost = async () => {
+        if (!editPostTitle.trim() || !editPostBody.trim()) return;
+        const res = await fetch(`${API}/api/posts/${post.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ title: editPostTitle.trim(), body: editPostBody.trim() })
+        });
+        if (res.ok) {
+            setPostData(prev => ({ ...prev, title: editPostTitle.trim(), body: editPostBody.trim() }));
+            setIsEditingPost(false);
+        } else {
+            const d = await res.json();
+            alert(d.error || 'Erreur lors de la modification');
+        }
+    };
+
+    const isMine = (userId) => currentUser && Number(currentUser.id) === Number(userId);
+
     return (
         <div className="post-card">
-            <h2>{post.title}</h2>
-
-            {post.image_path && (
-                <img className="post-image" src={`${API}${post.image_path}`} alt={post.title} />
-            )}
-
-            <p>{post.body}</p>
-
-            {post.categories?.length > 0 && (
-                <div className="post-tags">
-                    {post.categories.map(cat => (
-                        <span key={cat.id} className="post-tag">{cat.name}</span>
-                    ))}
+            {isEditingPost ? (
+                <div>
+                    <input
+                        type="text"
+                        className="comment-textarea"
+                        style={{ width: '100%', marginBottom: '10px', padding: '10px', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '6px', color: 'var(--text)', fontSize: '16px', fontFamily: 'Syne, sans-serif', fontWeight: '700' }}
+                        value={editPostTitle}
+                        onChange={e => setEditPostTitle(e.target.value)}
+                    />
+                    <textarea
+                        className="comment-textarea"
+                        style={{ width: '100%', marginBottom: '10px' }}
+                        rows="5"
+                        value={editPostBody}
+                        onChange={e => setEditPostBody(e.target.value)}
+                    />
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                        <button className="btn-comment-send" onClick={handleEditPost}>Sauvegarder</button>
+                        <button className="btn-comment-cancel" onClick={() => setIsEditingPost(false)}>Annuler</button>
+                    </div>
                 </div>
+            ) : (
+                <>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <h2>{postData.title}</h2>
+                        {isMine(post.user_id) && (
+                            <div style={{ display: 'flex', gap: '6px' }}>
+                                <button className="comment-action-btn"
+                                    onClick={() => { setIsEditingPost(true); setEditPostTitle(postData.title); setEditPostBody(postData.body); }}>
+                                    <IconEdit />
+                                </button>
+                                <button className="comment-action-btn" onClick={handleDeletePost}>
+                                    <IconTrash />
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
+                    {postData.image_path && (
+                        <img className="post-image" src={`${API}${postData.image_path}`} alt={postData.title} />
+                    )}
+
+                    <p>{postData.body}</p>
+
+                    {post.categories?.length > 0 && (
+                        <div className="post-tags">
+                            {post.categories.map(cat => (
+                                <span key={cat.id} className="post-tag">{cat.name}</span>
+                            ))}
+                        </div>
+                    )}
+
+                    <div className="post-meta">
+                        Par <span>{post.username}</span>
+                        {post.created_at && <> · {timeAgo(post.created_at)}</>}
+                    </div>
+                </>
             )}
 
-            <div className="post-meta">
-                Par <span>{post.username}</span>
-                {post.created_at && <> · {timeAgo(post.created_at)}</>}
-            </div>
-
-            {/* Votes du post */}
             <div className="post-actions">
                 <button
                     className={`vote-btn${likes.user_vote === 'like' ? ' vote-btn--active-like' : ''}`}
                     onClick={() => handleVotePost('like')}
                 >
-                    👍 <span>{likes.likes}</span>
+                    <IconThumbUp /> <span>{likes.likes}</span>
                 </button>
                 <button
                     className={`vote-btn${likes.user_vote === 'dislike' ? ' vote-btn--active-dislike' : ''}`}
                     onClick={() => handleVotePost('dislike')}
                 >
-                    👎 <span>{likes.dislikes}</span>
+                    <IconThumbDown /> <span>{likes.dislikes}</span>
                 </button>
-                <button
-                    className="comment-toggle-btn"
-                    onClick={() => setShowComments(v => !v)}
-                >
-                    💬 {showComments ? 'Masquer' : `Commentaires${comments.length > 0 ? ` (${comments.length})` : ''}`}
+                <button className="comment-toggle-btn" onClick={() => setShowComments(v => !v)}>
+                    <IconComment /> {showComments ? 'Masquer' : `Commentaires${comments.length > 0 ? ` (${comments.length})` : ''}`}
                 </button>
             </div>
 
-            {/* Section commentaires */}
             {showComments && (
                 <div className="comments-section">
                     <div className="comments-divider" />
@@ -153,12 +259,21 @@ function PostDetail({ post, currentUser, timeAgo }) {
                             <div className="comment-header">
                                 <span className="comment-author">{c.username}</span>
                                 <span className="comment-date">{formatDate(c.created_at)}</span>
-                                {currentUser?.id === c.user_id && (
+                                {c.edited && (
+                                    <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                                        (modifié)
+                                    </span>
+                                )}
+                                {isMine(c.user_id) && (
                                     <div className="comment-actions">
                                         <button className="comment-action-btn"
-                                            onClick={() => { setEditingId(c.id); setEditContent(c.content); }}>✏️</button>
+                                            onClick={() => { setEditingId(c.id); setEditContent(c.content); }}>
+                                            <IconEdit />
+                                        </button>
                                         <button className="comment-action-btn"
-                                            onClick={() => handleDeleteComment(c.id)}>🗑️</button>
+                                            onClick={() => handleDeleteComment(c.id)}>
+                                            <IconTrash />
+                                        </button>
                                     </div>
                                 )}
                             </div>
@@ -181,11 +296,11 @@ function PostDetail({ post, currentUser, timeAgo }) {
                                 <button
                                     className={`vote-btn vote-btn--sm${c.user_vote === 'like' ? ' vote-btn--active-like' : ''}`}
                                     onClick={() => handleVoteComment(c.id, 'like')}
-                                >👍 {c.likes || 0}</button>
+                                ><IconThumbUp /> {c.likes || 0}</button>
                                 <button
                                     className={`vote-btn vote-btn--sm${c.user_vote === 'dislike' ? ' vote-btn--active-dislike' : ''}`}
                                     onClick={() => handleVoteComment(c.id, 'dislike')}
-                                >👎 {c.dislikes || 0}</button>
+                                ><IconThumbDown /> {c.dislikes || 0}</button>
                             </div>
                         </div>
                     ))}
@@ -202,9 +317,12 @@ function PostDetail({ post, currentUser, timeAgo }) {
                         </div>
                     ) : (
                         <p className="comments-empty">
-                            <a href="http://localhost:8080/html/login.html" style={{ color: 'var(--accent-light)' }}>
+                            <button
+                                onClick={requireAuth}
+                                style={{ color: 'var(--accent-light)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
+                            >
                                 Connectez-vous
-                            </a> pour commenter.
+                            </button> pour commenter.
                         </p>
                     )}
                 </div>
