@@ -1,7 +1,8 @@
-import { useState } from 'react';
-import './App.css';
+import './App.css'
+import { useState, useEffect } from 'react';
 import Posts from './Posts';
 import CreatePost from './CreatePost';
+import Auth from './Auth';
 
 const ForumLogo = () => (
   <svg className="logo-icon" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -31,6 +32,32 @@ function Toast({ visible }) {
 function App() {
   const [toastVisible, setToastVisible] = useState(false);
   const [toastTrigger, setToastTrigger] = useState(0);
+  const [user, setUser] = useState(null);
+  const [authChecked, setAuthChecked] = useState(false);
+
+  useEffect(() => {
+    fetch('http://localhost:8080/api/auth/user', { credentials: 'include' })
+      .then(res => res.json())
+      .then(data => {
+        setUser(data.user);
+        setAuthChecked(true);
+      })
+      .catch(() => setAuthChecked(true));
+  }, []);
+
+  const handleLoginSuccess = () => {
+    fetch('http://localhost:8080/api/auth/user', { credentials: 'include' })
+      .then(res => res.json())
+      .then(data => setUser(data.user));
+  };
+
+  const handleLogout = async () => {
+    await fetch('http://localhost:8080/api/auth/logout', {
+      method: 'POST',
+      credentials: 'include'
+    });
+    setUser(null);
+  };
 
   const handlePostCreated = () => {
     setToastVisible(true);
@@ -38,16 +65,24 @@ function App() {
     setTimeout(() => setToastVisible(false), 3000);
   };
 
+  if (!authChecked) return <div>Chargement...</div>;
+
+  if (!user) {
+    return <Auth onLoginSuccess={handleLoginSuccess} />;
+  }
+
+  require('./App.css');
+
   return (
     <>
-      {/* Navbar fixe */}
       <nav className="navbar">
         <div className="navbar-brand">
           <ForumLogo />
           <h1>Forum</h1>
         </div>
         <div className="navbar-right">
-          {/* Espace réservé pour les boutons connexion de ton collègue */}
+          <span>Bonjour, {user.username}</span>
+          <button onClick={handleLogout}>Se déconnecter</button>
         </div>
       </nav>
 
