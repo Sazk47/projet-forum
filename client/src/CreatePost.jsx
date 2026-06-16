@@ -9,7 +9,7 @@ function CreatePost({ onPostCreated }) {
     const [fileName, setFileName]             = useState('Aucun fichier choisi');
 
     useEffect(() => {
-        fetch('http://localhost:8080/api/categories')
+        fetch('api/categories')
             .then(res => res.json())
             .then(data => { setCategories(data); setCategoriesLoading(false); })
             .catch(() => setCategoriesLoading(false));

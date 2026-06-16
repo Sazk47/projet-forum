@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import FilterPosts from './FilterPosts';
 import PostDetail from './PostDetail';
 
-const API = 'http://localhost:8080';
+const API = '';
 
 function timeAgo(dateStr) {
     const diff = Math.floor((Date.now() - new Date(dateStr)) / 1000);

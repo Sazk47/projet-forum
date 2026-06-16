@@ -12,7 +12,9 @@ const categoriesRoutes = require('./routes/categories');
 
 require('./database');
 
-const uploadsDir = path.join(__dirname, 'public', 'uploads');
+const uploadsDir     = path.join(__dirname, 'public', 'uploads');
+const clientBuildDir = path.join(__dirname, 'client', 'build');
+
 if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });
 }
@@ -29,6 +31,22 @@ const HTTP_MESSAGES = {
     500: 'Internal Server Error',
 };
 
+const MIME_TYPES = {
+    '.html': 'text/html',
+    '.js':   'application/javascript',
+    '.css':  'text/css',
+    '.png':  'image/png',
+    '.jpg':  'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.gif':  'image/gif',
+    '.webp': 'image/webp',
+    '.ico':  'image/x-icon',
+    '.json': 'application/json',
+    '.svg':  'image/svg+xml',
+    '.woff': 'font/woff',
+    '.woff2':'font/woff2',
+};
+
 const server = http.createServer((req, res) => {
 
     const getBody = () => new Promise((resolve, reject) => {
@@ -43,16 +61,10 @@ const server = http.createServer((req, res) => {
                 const filename = `${Date.now()}_${info.filename}`;
                 const filepath = path.join(uploadsDir, filename);
                 const writeStream = fs.createWriteStream(filepath);
-
                 file.pipe(writeStream);
-
                 writeStream.on('finish', () => {
-                    files[fieldname] = {
-                        filename: info.filename,
-                        path: `/uploads/${filename}`
-                    };
+                    files[fieldname] = { filename: info.filename, path: `/uploads/${filename}` };
                 });
-
                 writeStream.on('error', (err) => reject(err));
             });
 
@@ -70,8 +82,8 @@ const server = http.createServer((req, res) => {
 
             bb.on('close', () => resolve({ fields, files }));
             bb.on('error', (err) => reject(err));
-
             req.pipe(bb);
+
         } else {
             const decoder = new StringDecoder('utf-8');
             let body = '';
@@ -87,18 +99,8 @@ const server = http.createServer((req, res) => {
         }
     });
 
-    const CORS_HEADERS = {
-        'Access-Control-Allow-Origin': 'http://localhost:3000',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        'Access-Control-Allow-Credentials': 'true',
-    };
-
     res.json = (statusCode, data) => {
-        res.writeHead(statusCode, {
-            'Content-Type': 'application/json',
-            ...CORS_HEADERS,
-        });
+        res.writeHead(statusCode, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify(data));
     };
 
@@ -112,32 +114,22 @@ const server = http.createServer((req, res) => {
     const { method, url } = req;
     const urlPath = url.split('?')[0];
 
-    // CORS preflight
     if (method === 'OPTIONS') {
-        res.writeHead(200, CORS_HEADERS);
+        res.writeHead(200, {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+            'Access-Control-Allow-Credentials': 'true',
+        });
         res.end();
         return;
     }
 
-    // Fichiers statiques
     if (urlPath.startsWith('/uploads/')) {
         const filePath = path.join(__dirname, 'public', urlPath);
-
         if (fs.existsSync(filePath) && filePath.startsWith(uploadsDir)) {
             const ext = path.extname(filePath).toLowerCase();
-            const mimeTypes = {
-                '.jpg': 'image/jpeg',
-                '.jpeg': 'image/jpeg',
-                '.png': 'image/png',
-                '.gif': 'image/gif',
-                '.webp': 'image/webp',
-                '.css': 'text/css',
-                '.js': 'application/javascript',
-            };
-            res.writeHead(200, {
-                'Content-Type': mimeTypes[ext] || 'application/octet-stream',
-                'Access-Control-Allow-Origin': 'http://localhost:3000',
-            });
+            res.writeHead(200, { 'Content-Type': MIME_TYPES[ext] || 'application/octet-stream' });
             fs.createReadStream(filePath).pipe(res);
         } else {
             res.sendError(404, 'Fichier non trouvé');
@@ -145,24 +137,42 @@ const server = http.createServer((req, res) => {
         return;
     }
 
-    // Routing
+    if (!urlPath.startsWith('/api/')) {
+        const filePath = path.join(clientBuildDir, urlPath);
+        const fileExists = fs.existsSync(filePath) && fs.statSync(filePath).isFile();
+
+        if (fileExists) {
+            const ext = path.extname(filePath).toLowerCase();
+            res.writeHead(200, { 'Content-Type': MIME_TYPES[ext] || 'application/octet-stream' });
+            fs.createReadStream(filePath).pipe(res);
+        } else {
+            const indexPath = path.join(clientBuildDir, 'index.html');
+            if (fs.existsSync(indexPath)) {
+                res.writeHead(200, { 'Content-Type': 'text/html' });
+                fs.createReadStream(indexPath).pipe(res);
+            } else {
+                res.sendError(404, 'Frontend non buildé — lancez npm run build dans /client');
+            }
+        }
+        return;
+    }
+
     const handle = async () => {
         const bodyData = await getBody();
-        req.body = bodyData.fields;
+        req.body  = bodyData.fields;
         req.files = bodyData.files;
 
-        if (urlPath.startsWith('/api/auth'))        return authRoutes(req, res, urlPath, method);
-        if (urlPath.startsWith('/api/posts'))       return postsRoutes(req, res, urlPath, method);
-        if (urlPath.startsWith('/api/comments'))    return commentsRoutes(req, res, urlPath, method);
-        if (urlPath.startsWith('/api/likes'))       return likesRoutes(req, res, urlPath, method);
-        if (urlPath.startsWith('/api/categories'))  return categoriesRoutes(req, res, urlPath, method);
+        if (urlPath.startsWith('/api/auth'))       return authRoutes(req, res, urlPath, method);
+        if (urlPath.startsWith('/api/posts'))      return postsRoutes(req, res, urlPath, method);
+        if (urlPath.startsWith('/api/comments'))   return commentsRoutes(req, res, urlPath, method);
+        if (urlPath.startsWith('/api/likes'))      return likesRoutes(req, res, urlPath, method);
+        if (urlPath.startsWith('/api/categories')) return categoriesRoutes(req, res, urlPath, method);
 
         res.sendError(404, `Route ${method} ${urlPath} introuvable`);
     };
 
     handle().catch(err => {
         console.error('[ERREUR SERVEUR]', err);
-
         if (!res.writableEnded) {
             const status = err.status || err.statusCode || 500;
             res.sendError(status, err.message || 'Erreur interne du serveur');
