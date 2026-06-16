@@ -12,12 +12,9 @@ const getUserFromSession = (req) => {
     const sessionId = cookie.split(';')
                             .find(c => c.trim().startsWith('session_id='))
                             ?.split('=')[1];
-
     if (!sessionId) return null;
-
     const session = db.prepare(`SELECT user_id FROM sessions WHERE id = ? AND expires_at > datetime('now')`).get(sessionId);
     if (!session) return null;
-
     return db.prepare('SELECT id, username FROM users WHERE id = ?').get(session.user_id);
 };
 
@@ -36,17 +33,15 @@ const deleteImage = (imagePath) => {
     if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath);
 };
 
-// Méthodes autorisées par pattern de route
 const isAllowedMethod = (urlPath, postId, method) => {
-    if (urlPath === '/api/posts')                       return ['GET', 'POST'].includes(method);
-    if (postId && urlPath === `/api/posts/${postId}`)   return ['GET', 'PUT', 'DELETE'].includes(method);
+    if (urlPath === '/api/posts') return ['GET', 'POST'].includes(method);
+    if (postId && urlPath === `/api/posts/${postId}`) return ['GET', 'PUT', 'DELETE'].includes(method);
     return false;
 };
 
 module.exports = async (req, res, urlPath, method) => {
     const postId = extractIdFromPath(urlPath);
 
-    // Vérification méthode non autorisée
     const routeExists = urlPath === '/api/posts' || (postId && urlPath === `/api/posts/${postId}`);
     if (routeExists && !isAllowedMethod(urlPath, postId, method)) {
         return res.sendError(405, `Méthode ${method} non autorisée sur ${urlPath}`);
@@ -56,13 +51,18 @@ module.exports = async (req, res, urlPath, method) => {
     if (urlPath === '/api/posts' && method === 'GET') {
         const url = new URL(req.url, 'http://localhost');
         const categoryId = url.searchParams.get('category');
-        const mine = url.searchParams.get('mine');
-        const liked = url.searchParams.get('liked');
+        const mine       = url.searchParams.get('mine');
+        const liked      = url.searchParams.get('liked');
+        const sort       = url.searchParams.get('sort') || 'recent'; // 'recent' | 'top'
+        const order      = url.searchParams.get('order') || 'desc';  // 'asc' | 'desc'
 
         const user = getUserFromSession(req);
 
         let query = `
-            SELECT posts.*, users.username 
+            SELECT posts.*, users.username,
+                (SELECT COUNT(*) FROM likes WHERE post_id = posts.id AND type = 'like') AS likes_count,
+                (SELECT COUNT(*) FROM likes WHERE post_id = posts.id AND type = 'dislike') AS dislikes_count,
+                (SELECT COUNT(*) FROM commentaires WHERE post_id = posts.id) AS comments_count
             FROM posts 
             JOIN users ON posts.user_id = users.id 
             WHERE posts.status = 'visible'
@@ -86,10 +86,13 @@ module.exports = async (req, res, urlPath, method) => {
             params.push(user.id);
         }
 
-        query += ` ORDER BY posts.created_at DESC`;
+        const sortCol = sort === 'top' ? 'likes_count' : sort === 'views' ? 'posts.views' : 'posts.created_at';
+        const orderDir = order === 'asc' ? 'ASC' : 'DESC';
+        query += ` ORDER BY ${sortCol} ${orderDir}`;
 
-        const stmt = db.prepare(query);
-        const posts = params.length > 0 ? stmt.all(...params) : stmt.all();
+        const posts = params.length > 0
+            ? db.prepare(query).all(...params)
+            : db.prepare(query).all();
 
         const postsWithCategories = posts.map(post => ({
             ...post,
@@ -99,16 +102,21 @@ module.exports = async (req, res, urlPath, method) => {
         return res.json(200, postsWithCategories);
     }
 
-    // GET /api/posts/:id
+    // GET /api/posts/:id — incrémente les vues
     if (postId && urlPath === `/api/posts/${postId}` && method === 'GET') {
         const post = db.prepare(`
-            SELECT posts.*, users.username 
+            SELECT posts.*, users.username,
+                (SELECT COUNT(*) FROM likes WHERE post_id = posts.id AND type = 'like') AS likes_count,
+                (SELECT COUNT(*) FROM likes WHERE post_id = posts.id AND type = 'dislike') AS dislikes_count,
+                (SELECT COUNT(*) FROM commentaires WHERE post_id = posts.id) AS comments_count
             FROM posts 
             JOIN users ON posts.user_id = users.id 
             WHERE posts.id = ? AND posts.status = 'visible'
         `).get(postId);
 
         if (!post) return res.sendError(404, 'Post non trouvé');
+
+        db.prepare('UPDATE posts SET views = views + 1 WHERE id = ?').run(postId);
 
         return res.json(200, { ...post, categories: getPostCategories(post.id) });
     }
@@ -125,8 +133,7 @@ module.exports = async (req, res, urlPath, method) => {
                 const bcrypt = require('bcrypt');
                 const hashedPassword = bcrypt.hashSync('demo123', 10);
                 const result = db.prepare(`
-                    INSERT INTO users (username, email, password_hash, role) 
-                    VALUES (?, ?, ?, ?)
+                    INSERT INTO users (username, email, password_hash, role) VALUES (?, ?, ?, ?)
                 `).run('demo', 'demo@example.com', hashedPassword, 'user');
                 user = { id: result.lastInsertRowid, username: 'demo' };
             }
@@ -135,22 +142,16 @@ module.exports = async (req, res, urlPath, method) => {
         const { title, body, categories } = req.body;
         const imageFile = req.files?.image;
 
-        if (!title || !body) {
-            return res.sendError(400, 'Titre et contenu requis');
-        }
-
+        if (!title || !body) return res.sendError(400, 'Titre et contenu requis');
         if (!categories || (Array.isArray(categories) && categories.length === 0)) {
             return res.sendError(400, 'Au moins une catégorie doit être sélectionnée');
         }
 
         const imagePath = imageFile ? imageFile.path : null;
-
-        const result = db.prepare(`
-            INSERT INTO posts (title, body, user_id, image_path) VALUES (?, ?, ?, ?)
-        `).run(title, body, user.id, imagePath);
+        const result = db.prepare(`INSERT INTO posts (title, body, user_id, image_path) VALUES (?, ?, ?, ?)`)
+                         .run(title, body, user.id, imagePath);
 
         const newPostId = result.lastInsertRowid;
-
         const categoryArray = Array.isArray(categories) ? categories : [categories];
         const stmt = db.prepare('INSERT INTO post_category (post_id, category_id) VALUES (?, ?)');
         categoryArray.forEach(categoryId => {

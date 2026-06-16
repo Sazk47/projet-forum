@@ -1,12 +1,10 @@
 const Database = require('better-sqlite3');
 const db = new Database('./forum.db');
 
-// Active les clés étrangères (désactivées par défaut sur SQLite)
 db.pragma('foreign_keys = ON');
 
 const initDB = () => {
 
-    // Table users
     db.exec(`
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -18,7 +16,6 @@ const initDB = () => {
         )
     `);
 
-    // Table sessions
     db.exec(`
         CREATE TABLE IF NOT EXISTS sessions (
             id VARCHAR PRIMARY KEY,
@@ -28,7 +25,6 @@ const initDB = () => {
         )
     `);
 
-    // Table posts
     db.exec(`
         CREATE TABLE IF NOT EXISTS posts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -37,12 +33,12 @@ const initDB = () => {
             user_id INTEGER NOT NULL,
             status VARCHAR DEFAULT 'visible',
             image_path VARCHAR,
+            views INTEGER DEFAULT 0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         )
     `);
 
-    // Table category
     db.exec(`
         CREATE TABLE IF NOT EXISTS category (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -51,7 +47,6 @@ const initDB = () => {
         )
     `);
 
-    // Table post_category (liaison many-to-many)
     db.exec(`
         CREATE TABLE IF NOT EXISTS post_category (
             post_id INTEGER NOT NULL,
@@ -62,7 +57,6 @@ const initDB = () => {
         )
     `);
 
-    // Table commentaires
     db.exec(`
         CREATE TABLE IF NOT EXISTS commentaires (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -75,7 +69,6 @@ const initDB = () => {
         )
     `);
 
-    // Table likes
     db.exec(`
         CREATE TABLE IF NOT EXISTS likes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -90,12 +83,16 @@ const initDB = () => {
         )
     `);
 
+    try {
+        db.exec('ALTER TABLE posts ADD COLUMN views INTEGER DEFAULT 0');
+    } catch (e) {
+    }
+
     console.log('Base de données initialisée !');
 };
 
 initDB();
 
-// Ajouter les catégories par défaut
 const seedCategories = () => {
     const defaultCategories = [
         { name: 'Général', description: 'Discussions générales' },
@@ -106,9 +103,7 @@ const seedCategories = () => {
     ];
 
     const stmt = db.prepare('INSERT OR IGNORE INTO category (name, description) VALUES (?, ?)');
-    defaultCategories.forEach(cat => {
-        stmt.run(cat.name, cat.description);
-    });
+    defaultCategories.forEach(cat => stmt.run(cat.name, cat.description));
 };
 
 seedCategories();

@@ -38,7 +38,20 @@ const IconTrash = () => (
     </svg>
 );
 
-function PostDetail({ post, currentUser, timeAgo, requireAuth, onPostDeleted }) {
+const IconEye = () => (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+        <circle cx="12" cy="12" r="3"/>
+    </svg>
+);
+
+const IconMsg = () => (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+    </svg>
+);
+
+function PostDetail({ post, currentUser, timeAgo, requireAuth, onPostDeleted, statsBar }) {
     const [likes, setLikes]               = useState({ likes: 0, dislikes: 0, user_vote: null });
     const [comments, setComments]         = useState([]);
     const [showComments, setShowComments] = useState(false);
@@ -224,6 +237,22 @@ function PostDetail({ post, currentUser, timeAgo, requireAuth, onPostDeleted }) 
                     <div className="post-meta">
                         Par <span>{post.username}</span>
                         {post.created_at && <> · {timeAgo(post.created_at)}</>}
+                    </div>
+
+                    {/* Stats bar : vues, réponses, likes */}
+                    <div style={{
+                        display: 'flex', gap: '14px', alignItems: 'center',
+                        fontSize: '12px', color: 'var(--text-muted)', marginTop: '8px'
+                    }}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <IconEye /> {post.views || 0} vue{post.views !== 1 ? 's' : ''}
+                        </span>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <IconMsg /> {post.comments_count || 0} réponse{post.comments_count !== 1 ? 's' : ''}
+                        </span>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <IconThumbUp /> {post.likes_count || 0} like{post.likes_count !== 1 ? 's' : ''}
+                        </span>
                     </div>
                 </>
             )}
